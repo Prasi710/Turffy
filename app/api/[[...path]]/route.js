@@ -406,7 +406,7 @@ export async function POST(request) {
       }
       
       const body = await request.json();
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingId } = body;
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingIds } = body;
       
       // Verify signature
       const sign = razorpay_order_id + '|' + razorpay_payment_id;
@@ -419,24 +419,44 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
       }
       
-      // Update booking status
+      // Update all booking statuses
       const db = await connectToDatabase();
-      await db.collection('bookings').updateOne(
-        { bookingId, userId: user.userId },
-        { 
-          $set: { 
-            status: 'confirmed',
-            paymentId: razorpay_payment_id,
-            confirmedAt: new Date()
-          } 
-        }
-      );
       
-      const booking = await db.collection('bookings').findOne({ bookingId });
+      if (Array.isArray(bookingIds)) {
+        // Multiple bookings
+        await db.collection('bookings').updateMany(
+          { bookingId: { $in: bookingIds }, userId: user.userId },
+          { 
+            $set: { 
+              status: 'confirmed',
+              paymentId: razorpay_payment_id,
+              confirmedAt: new Date()
+            } 
+          }
+        );
+      } else {
+        // Single booking (backward compatibility)
+        await db.collection('bookings').updateOne(
+          { bookingId: bookingIds, userId: user.userId },
+          { 
+            $set: { 
+              status: 'confirmed',
+              paymentId: razorpay_payment_id,
+              confirmedAt: new Date()
+            } 
+          }
+        );
+      }
+      
+      const bookings = await db.collection('bookings')
+        .find({ 
+          bookingId: Array.isArray(bookingIds) ? { $in: bookingIds } : bookingIds 
+        })
+        .toArray();
       
       return NextResponse.json({ 
         success: true,
-        booking
+        bookings
       });
     }
 
