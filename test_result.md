@@ -286,8 +286,58 @@ test_plan:
   test_all: false
   test_priority: "completed"
 
+  - task: "GET /api/bookings - User booking history"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Booking history API working perfectly. JWT authentication verified, returns bookings array with proper structure. Tested with mobile 7777777777."
+
+  - task: "Booking Data Enrichment with TurfDetails"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ TurfDetails enrichment working correctly. Bookings include name, location, city from turf data. Proper data structure validation confirmed."
+
+  - task: "Booking History Sort Order"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Bookings sorted by createdAt (newest first) as expected. MongoDB sort order working correctly."
+
+  - task: "Date Filtering Fix for Slots"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Date filtering working perfectly. Today returns only future slots (3), tomorrow returns all 17 slots (6 AM-11 PM). No past slots returned for current date."
+
 agent_communication:
     - agent: "testing"
       message: "✅ COMPREHENSIVE BACKEND TESTING COMPLETE - All 9 API endpoints tested and working perfectly. Database operations (MongoDB) validated. User creation, OTP flow, payment integration, and data persistence all functioning correctly. No critical issues found."
     - agent: "testing"
       message: "✅ MULTI-SLOT BOOKING TESTING COMPLETE - All new multi-slot booking functionality tested and working perfectly. Multi-slot order creation, database verification (3 bookings with same orderId), payment verification logic for bookingIds array, and backward compatibility for single slots all functioning correctly. No critical issues found."
+    - agent: "testing"
+      message: "✅ PROFILE & BOOKING HISTORY TESTING COMPLETE - All requested features tested and working perfectly. Login with mobile 7777777777 successful, GET /api/bookings returns proper structure, booking creation updates history, TurfDetails enrichment working (name/location/city), and date filtering prevents past slots. All 5 test scenarios passed successfully."
