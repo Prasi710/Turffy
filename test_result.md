@@ -285,6 +285,7 @@ test_plan:
   stuck_tasks: []
   test_all: false
   test_priority: "completed"
+  profile_booking_tests: "completed"
 
   - task: "GET /api/bookings - User booking history"
     implemented: true
