@@ -213,6 +213,54 @@ backend:
           agent: "testing"
           comment: "✅ Payment verification signature logic working correctly. Invalid signatures properly rejected with 400 error as expected."
 
+  - task: "Multi-Slot Booking - Order Creation"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Multi-slot order creation working perfectly. Successfully created order with 3 slots, returned 3 bookingIds (645ad47a-c0e7-4d73-8be6-89361bfd398a, ee7a65c1-0ba3-4acf-b918-a5a6c499cb2f, d3643f2e-d0c2-4db1-9e8f-1cf910a3b466) and proper Razorpay order."
+
+  - task: "Multi-Slot Booking - Database Verification"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Database verification successful. All 3 bookings stored in MongoDB with same orderId (order_SKUgKDpGy59HjD), status 'pending', correct turfId and userId association."
+
+  - task: "Multi-Slot Booking - Payment Verification Logic"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Multi-slot payment verification logic working correctly. Accepts bookingIds array, validates signatures properly, handles multiple booking updates. Invalid signatures correctly rejected with 400 error as expected."
+
+  - task: "Single Slot Backward Compatibility"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Backward compatibility maintained perfectly. Single slot booking (bookingId: 61c55ba2-dd99-4fca-94a5-b19d937ac67c) works with new API structure. Payment verification handles both array and single bookingId formats correctly."
+
 frontend:
   - task: "Frontend Testing"
     implemented: true
