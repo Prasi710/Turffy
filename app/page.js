@@ -250,16 +250,18 @@ const App = () => {
     }
   };
 
-  const openRazorpay = (orderData, slot) => {
+  const openRazorpay = (orderData) => {
+    const totalAmount = selectedSlots.length * selectedTurf.pricePerHour;
+    
     const options = {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
       amount: orderData.amount,
       currency: orderData.currency,
       name: 'TurfHub',
-      description: `Booking for ${selectedTurf.name}`,
+      description: `Booking ${selectedSlots.length} slot(s) at ${selectedTurf.name}`,
       order_id: orderData.orderId,
       handler: async (response) => {
-        await verifyPayment(response, orderData.bookingId);
+        await verifyPayment(response, orderData.bookingIds);
       },
       prefill: {
         contact: user.mobile
