@@ -720,15 +720,103 @@ const App = () => {
 
           {/* User Info */}
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
-              </div>
+            {!editingProfile ? (
               <div>
-                <div className="text-sm text-gray-600">Mobile Number</div>
-                <div className="text-lg font-semibold">{user?.mobile}</div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Mobile Number</div>
+                      <div className="text-lg font-semibold">{user?.mobile}</div>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setEditingProfile(true)}>
+                    Edit Profile
+                  </Button>
+                </div>
+                
+                {(user?.name || user?.email || user?.dob) && (
+                  <div className="mt-3 pt-3 border-t border-green-200 space-y-2">
+                    {user?.name && (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">Name:</span>
+                        <span className="text-sm font-medium">{user.name}</span>
+                      </div>
+                    )}
+                    {user?.email && (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">Email:</span>
+                        <span className="text-sm font-medium">{user.email}</span>
+                      </div>
+                    )}
+                    {user?.dob && (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">Date of Birth:</span>
+                        <span className="text-sm font-medium">{new Date(user.dob).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <h4 className="font-semibold mb-3">Edit Profile</h4>
+                
+                <div>
+                  <label className="text-sm font-medium">Full Name</label>
+                  <Input
+                    type="text"
+                    placeholder="Enter your name"
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Email</label>
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Date of Birth</label>
+                  <Input
+                    type="date"
+                    value={profileForm.dob}
+                    onChange={(e) => setProfileForm({ ...profileForm, dob: e.target.value })}
+                  />
+                </div>
+                
+                <div className="flex space-x-2 pt-2">
+                  <Button 
+                    onClick={handleUpdateProfile} 
+                    disabled={loading}
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  >
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setEditingProfile(false);
+                      setProfileForm({
+                        name: user?.name || '',
+                        email: user?.email || '',
+                        dob: user?.dob || ''
+                      });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Booking History */}
