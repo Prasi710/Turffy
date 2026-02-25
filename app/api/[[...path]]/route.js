@@ -349,9 +349,9 @@ export async function POST(request) {
       }
       
       const body = await request.json();
-      const { turfId, slotId, date, amount } = body;
+      const { turfId, slots, amount } = body;
       
-      if (!turfId || !slotId || !date || !amount) {
+      if (!turfId || !slots || !Array.isArray(slots) || slots.length === 0 || !amount) {
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
       }
       
@@ -362,34 +362,39 @@ export async function POST(request) {
         receipt: `receipt_${Date.now()}`,
         notes: {
           turfId,
-          slotId,
-          date,
-          userId: user.userId
+          userId: user.userId,
+          slotsCount: slots.length
         }
       };
       
       const order = await razorpay.orders.create(options);
       
-      // Store booking as pending
+      // Store bookings as pending for all slots
       const db = await connectToDatabase();
-      const bookingId = uuidv4();
-      await db.collection('bookings').insertOne({
-        bookingId,
-        userId: user.userId,
-        turfId,
-        slotId,
-        date,
-        amount,
-        orderId: order.id,
-        status: 'pending',
-        createdAt: new Date()
-      });
+      const bookingIds = [];
+      
+      for (const slotInfo of slots) {
+        const bookingId = uuidv4();
+        bookingIds.push(bookingId);
+        
+        await db.collection('bookings').insertOne({
+          bookingId,
+          userId: user.userId,
+          turfId,
+          slotId: slotInfo.slotId,
+          date: slotInfo.date,
+          amount: amount / slots.length, // Divide amount evenly
+          orderId: order.id,
+          status: 'pending',
+          createdAt: new Date()
+        });
+      }
       
       return NextResponse.json({ 
         orderId: order.id,
         amount: order.amount,
         currency: order.currency,
-        bookingId
+        bookingIds
       });
     }
 
