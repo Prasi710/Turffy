@@ -262,7 +262,20 @@ export async function GET(request) {
         .sort({ createdAt: -1 })
         .toArray();
       
-      return NextResponse.json({ bookings });
+      // Enrich bookings with turf details
+      const enrichedBookings = bookings.map(booking => {
+        const turf = mockTurfs.find(t => t.id === booking.turfId);
+        return {
+          ...booking,
+          turfDetails: turf ? {
+            name: turf.name,
+            location: turf.location,
+            city: turf.city
+          } : null
+        };
+      });
+      
+      return NextResponse.json({ bookings: enrichedBookings });
     }
 
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
