@@ -663,6 +663,102 @@ const App = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Profile Modal */}
+      <Dialog open={showProfile} onOpenChange={setShowProfile}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center space-x-2">
+              <User className="w-6 h-6" />
+              <span>My Profile</span>
+            </DialogTitle>
+            <DialogDescription>
+              View your account details and booking history
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* User Info */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Mobile Number</div>
+                <div className="text-lg font-semibold">{user?.mobile}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Booking History */}
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Booking History</h3>
+            
+            {bookings.length > 0 ? (
+              <div className="space-y-3">
+                {bookings.map((booking) => {
+                  const turf = turfs.find(t => t.id === booking.turfId);
+                  return (
+                    <Card key={booking.bookingId} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <h4 className="font-semibold text-lg">{turf?.name || 'Turf'}</h4>
+                              <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'} 
+                                     className={booking.status === 'confirmed' ? 'bg-green-600' : ''}>
+                                {booking.status}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <div className="flex items-center space-x-2">
+                                <MapPin className="w-4 h-4" />
+                                <span>{turf?.location}, {turf?.city}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Calendar className="w-4 h-4" />
+                                <span>{new Date(booking.date).toLocaleDateString('en-US', { 
+                                  weekday: 'long', 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Clock className="w-4 h-4" />
+                                <span>Slot: {booking.slotId?.split('-').pop()}:00</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-green-600">₹{booking.amount}</div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(booking.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <Calendar className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 text-lg">No bookings yet</p>
+                <p className="text-gray-400 text-sm mt-2">Start booking your favorite turfs!</p>
+                <Button 
+                  onClick={() => setShowProfile(false)} 
+                  className="mt-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                >
+                  Browse Turfs
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
