@@ -27,6 +27,8 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [bookingForSlots, setBookingForSlots] = useState([]);
   const [availableDates, setAvailableDates] = useState([]);
+  const [showProfile, setShowProfile] = useState(false);
+  const [bookings, setBookings] = useState([]);
 
   // Load user from localStorage
   useEffect(() => {
