@@ -210,14 +210,21 @@ const App = () => {
     }
   };
 
-  const initiatePayment = async (slot) => {
+  const initiatePayment = async () => {
     if (!user) {
       toast.error('Please login first');
       return;
     }
 
+    if (selectedSlots.length === 0) {
+      toast.error('Please select at least one slot');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
+      const totalAmount = selectedSlots.length * selectedTurf.pricePerHour;
+      
       const response = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 
@@ -226,17 +233,16 @@ const App = () => {
         },
         body: JSON.stringify({
           turfId: selectedTurf.id,
-          slotId: slot.id,
-          date: selectedDate,
-          amount: selectedTurf.pricePerHour
+          slots: selectedSlots.map(slot => ({ slotId: slot.id, date: selectedDate })),
+          amount: totalAmount
         })
       });
 
       const data = await response.json();
       if (data.orderId) {
-        openRazorpay(data, slot);
+        openRazorpay(data);
       } else {
-        toast.error('Failed to create order');
+        toast.error(data.error || 'Failed to create order');
       }
     } catch (error) {
       console.error('Payment error:', error);
