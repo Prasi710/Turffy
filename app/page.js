@@ -342,6 +342,46 @@ const App = () => {
   const handleProfileClick = () => {
     setShowProfile(true);
     loadBookings();
+    if (user) {
+      setProfileForm({
+        name: user.name || '',
+        email: user.email || '',
+        dob: user.dob || ''
+      });
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(profileForm)
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const updatedUser = { ...user, ...data.user };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setEditingProfile(false);
+        toast.success('Profile updated successfully!');
+      } else {
+        toast.error(data.error || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Error updating profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (dateStr) => {
