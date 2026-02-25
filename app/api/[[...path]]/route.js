@@ -211,10 +211,11 @@ export async function GET(request) {
       }
       
       const currentDate = new Date();
-      const requestedDate = date ? new Date(date) : currentDate;
+      const requestedDate = date ? new Date(date + 'T00:00:00') : new Date(currentDate.toISOString().split('T')[0] + 'T00:00:00');
       
-      // Check if it's today
-      const isToday = requestedDate.toDateString() === currentDate.toDateString();
+      // Compare dates (ignoring time)
+      const currentDateOnly = new Date(currentDate.toISOString().split('T')[0] + 'T00:00:00');
+      const isToday = requestedDate.getTime() === currentDateOnly.getTime();
       
       const slots = generateSlots(
         requestedDate.toISOString().split('T')[0],
