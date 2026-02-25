@@ -195,11 +195,10 @@ const App = () => {
         setShowLoginModal(false);
         toast.success('Login successful!');
 
-        // If booking was pending, continue with payment
-        if (bookingForSlot) {
-          setSelectedSlot(bookingForSlot);
-          initiatePayment(bookingForSlot);
-          setBookingForSlot(null);
+        // If booking was pending, restore selected slots
+        if (bookingForSlots.length > 0) {
+          setSelectedSlots(bookingForSlots);
+          setBookingForSlots([]);
         }
       } else {
         toast.error(data.error || 'Invalid OTP');
