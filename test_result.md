@@ -335,6 +335,42 @@ test_plan:
           agent: "testing"
           comment: "✅ Date filtering working perfectly. Today returns only future slots (3), tomorrow returns all 17 slots (6 AM-11 PM). No past slots returned for current date."
 
+  - task: "PUT /api/profile - Update user profile"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Profile update working perfectly. Login with 6666666666 successful, profile fields (name, email, dob) initially empty, PUT /api/profile updates correctly, and profile persists across sessions."
+
+  - task: "Profile Field Validation & Persistence"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Profile persistence verified. User creation includes name/email/dob fields (empty initially), profile updates store correctly in database, re-login preserves all profile data."
+
+  - task: "Date Filtering Enhancement"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Date filtering working correctly. Yesterday (2026-02-25) shows 3 slots at 7:59 PM, today shows only future slots (3), tomorrow shows all 17 slots (6 AM-11 PM). Time-based filtering prevents past slot display."
+
 agent_communication:
     - agent: "testing"
       message: "✅ COMPREHENSIVE BACKEND TESTING COMPLETE - All 9 API endpoints tested and working perfectly. Database operations (MongoDB) validated. User creation, OTP flow, payment integration, and data persistence all functioning correctly. No critical issues found."
@@ -342,3 +378,5 @@ agent_communication:
       message: "✅ MULTI-SLOT BOOKING TESTING COMPLETE - All new multi-slot booking functionality tested and working perfectly. Multi-slot order creation, database verification (3 bookings with same orderId), payment verification logic for bookingIds array, and backward compatibility for single slots all functioning correctly. No critical issues found."
     - agent: "testing"
       message: "✅ PROFILE & BOOKING HISTORY TESTING COMPLETE - All requested features tested and working perfectly. Login with mobile 7777777777 successful, GET /api/bookings returns proper structure, booking creation updates history, TurfDetails enrichment working (name/location/city), and date filtering prevents past slots. All 5 test scenarios passed successfully."
+    - agent: "testing"
+      message: "✅ PROFILE UPDATE & DATE FIX TESTING COMPLETE - All requested profile and date filtering features tested successfully. Profile creation with mobile 6666666666, profile update API (PUT /api/profile), profile persistence across sessions, and enhanced date filtering all working perfectly. 5/5 tests passed, no critical issues found."
