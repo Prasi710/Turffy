@@ -546,21 +546,86 @@ const App = () => {
                   <span>Available Slots</span>
                 </h3>
                 {slots.length > 0 ? (
-                  <div className="grid grid-cols-4 gap-2">
-                    {slots.map(slot => (
-                      <Button
-                        key={slot.id}
-                        variant={slot.available ? 'outline' : 'secondary'}
-                        disabled={!slot.available}
-                        onClick={() => handleSlotSelect(slot)}
-                        className={slot.available ? 'hover:bg-green-100 hover:border-green-600' : 'opacity-50'}
-                      >
-                        <div className="text-center">
-                          <div className="font-semibold">{slot.time}</div>
-                          <div className="text-xs text-gray-500">₹{selectedTurf.pricePerHour}</div>
+                  <div>
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      {slots.map(slot => {
+                        const isSelected = selectedSlots.find(s => s.id === slot.id);
+                        return (
+                          <Button
+                            key={slot.id}
+                            variant={isSelected ? 'default' : slot.available ? 'outline' : 'secondary'}
+                            disabled={!slot.available}
+                            onClick={() => handleSlotSelect(slot)}
+                            className={isSelected 
+                              ? 'bg-green-600 hover:bg-green-700 border-2 border-green-700' 
+                              : slot.available 
+                              ? 'hover:bg-green-100 hover:border-green-600' 
+                              : 'opacity-50'
+                            }
+                          >
+                            <div className="text-center">
+                              <div className="font-semibold">{slot.time}</div>
+                              <div className="text-xs text-gray-500">₹{selectedTurf.pricePerHour}</div>
+                            </div>
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Selected Slots Summary */}
+                    {selectedSlots.length > 0 && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <Check className="w-5 h-5 text-green-600" />
+                            <span className="font-semibold text-green-900">
+                              {selectedSlots.length} Slot{selectedSlots.length > 1 ? 's' : ''} Selected
+                            </span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setSelectedSlots([])}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            Clear All
+                          </Button>
                         </div>
-                      </Button>
-                    ))}
+                        
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {selectedSlots.map(slot => (
+                            <Badge key={slot.id} variant="secondary" className="bg-white border border-green-300">
+                              {slot.time} - {slot.endTime}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedSlots(selectedSlots.filter(s => s.id !== slot.id));
+                                }}
+                                className="ml-2 text-red-600 hover:text-red-800"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-3 border-t border-green-200">
+                          <div>
+                            <div className="text-sm text-gray-600">Total Amount</div>
+                            <div className="text-2xl font-bold text-green-700">
+                              ₹{selectedSlots.length * selectedTurf.pricePerHour}
+                            </div>
+                          </div>
+                          <Button 
+                            onClick={initiatePayment}
+                            size="lg"
+                            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                          >
+                            Proceed to Payment
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-gray-500">No slots available for this date</p>
