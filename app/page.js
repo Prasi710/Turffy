@@ -275,7 +275,7 @@ const App = () => {
     razorpay.open();
   };
 
-  const verifyPayment = async (paymentResponse, bookingId) => {
+  const verifyPayment = async (paymentResponse, bookingIds) => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/payment/verify', {
@@ -288,15 +288,15 @@ const App = () => {
           razorpay_order_id: paymentResponse.razorpay_order_id,
           razorpay_payment_id: paymentResponse.razorpay_payment_id,
           razorpay_signature: paymentResponse.razorpay_signature,
-          bookingId
+          bookingIds
         })
       });
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Booking confirmed! 🎉');
+        toast.success(`${selectedSlots.length} slot(s) booked successfully! 🎉`);
         setShowTurfDetails(false);
-        setSelectedSlot(null);
+        setSelectedSlots([]);
         // Reload slots to show updated availability
         await loadSlots(selectedTurf.id, selectedDate);
       } else {
