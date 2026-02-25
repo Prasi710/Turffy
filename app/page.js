@@ -319,6 +319,29 @@ const App = () => {
     toast.success('Logged out successfully');
   };
 
+  const loadBookings = async () => {
+    if (!user) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/bookings', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      setBookings(data.bookings || []);
+    } catch (error) {
+      console.error('Error loading bookings:', error);
+      toast.error('Failed to load bookings');
+    }
+  };
+
+  const handleProfileClick = () => {
+    setShowProfile(true);
+    loadBookings();
+  };
+
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     const today = new Date();
