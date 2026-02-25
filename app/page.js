@@ -129,13 +129,20 @@ const App = () => {
     }
 
     if (!user) {
-      setBookingForSlot(slot);
+      setBookingForSlots([slot]);
       setShowLoginModal(true);
       return;
     }
 
-    setSelectedSlot(slot);
-    initiatePayment(slot);
+    // Toggle slot selection
+    const isSelected = selectedSlots.find(s => s.id === slot.id);
+    if (isSelected) {
+      setSelectedSlots(selectedSlots.filter(s => s.id !== slot.id));
+      toast.info('Slot removed from selection');
+    } else {
+      setSelectedSlots([...selectedSlots, slot]);
+      toast.success('Slot added to selection');
+    }
   };
 
   const handleSendOtp = async () => {
