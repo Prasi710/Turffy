@@ -332,6 +332,9 @@ export async function POST(request) {
         user = {
           userId,
           mobile,
+          name: '',
+          email: '',
+          dob: '',
           createdAt: new Date()
         };
         await db.collection('users').insertOne(user);
@@ -349,7 +352,10 @@ export async function POST(request) {
         token,
         user: {
           userId: user.userId,
-          mobile: user.mobile
+          mobile: user.mobile,
+          name: user.name || '',
+          email: user.email || '',
+          dob: user.dob || ''
         }
       });
     }
