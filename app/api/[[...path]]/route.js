@@ -487,7 +487,51 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
-  return NextResponse.json({ error: 'Method not implemented' }, { status: 501 });
+  const { pathname } = new URL(request.url);
+
+  try {
+    // PUT /api/profile - Update user profile
+    if (pathname === '/api/profile') {
+      const user = verifyToken(request);
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      const body = await request.json();
+      const { name, email, dob } = body;
+      
+      const db = await connectToDatabase();
+      await db.collection('users').updateOne(
+        { userId: user.userId },
+        { 
+          $set: { 
+            name: name || '',
+            email: email || '',
+            dob: dob || '',
+            updatedAt: new Date()
+          } 
+        }
+      );
+      
+      const updatedUser = await db.collection('users').findOne({ userId: user.userId });
+      
+      return NextResponse.json({ 
+        success: true,
+        user: {
+          userId: updatedUser.userId,
+          mobile: updatedUser.mobile,
+          name: updatedUser.name || '',
+          email: updatedUser.email || '',
+          dob: updatedUser.dob || ''
+        }
+      });
+    }
+
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  } catch (error) {
+    console.error('PUT Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
 export async function DELETE(request) {
