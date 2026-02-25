@@ -19,13 +19,13 @@ const App = () => {
   const [selectedTurf, setSelectedTurf] = useState(null);
   const [slots, setSlots] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedSlots, setSelectedSlots] = useState([]);
   const [mobile, setMobile] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [bookingForSlot, setBookingForSlot] = useState(null);
+  const [bookingForSlots, setBookingForSlots] = useState([]);
   const [availableDates, setAvailableDates] = useState([]);
 
   // Load user from localStorage
