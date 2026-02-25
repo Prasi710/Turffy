@@ -60,10 +60,12 @@ const App = () => {
     }
   }, []);
 
-  // Generate next 5 days
+  // Generate next 5 days (only current and future dates)
   useEffect(() => {
     const dates = [];
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset to start of day
+    
     for (let i = 0; i < 5; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
