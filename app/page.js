@@ -390,9 +390,10 @@ const App = () => {
             <div>
               {user ? (
                 <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <div className="text-sm font-medium">{user.mobile}</div>
-                  </div>
+                  <Button variant="ghost" size="sm" onClick={handleProfileClick} className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>Profile</span>
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleLogout}>
                     Logout
                   </Button>
