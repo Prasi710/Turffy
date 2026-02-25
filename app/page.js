@@ -29,6 +29,8 @@ const App = () => {
   const [availableDates, setAvailableDates] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   const [bookings, setBookings] = useState([]);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: '', email: '', dob: '' });
 
   // Load user from localStorage
   useEffect(() => {
