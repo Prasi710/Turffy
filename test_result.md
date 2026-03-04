@@ -371,6 +371,102 @@ test_plan:
           agent: "testing"
           comment: "✅ Date filtering working correctly. Yesterday (2026-02-25) shows 3 slots at 7:59 PM, today shows only future slots (3), tomorrow shows all 17 slots (6 AM-11 PM). Time-based filtering prevents past slot display."
 
+  - task: "POST /api/vendor/register - Vendor registration"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Vendor registration working perfectly. Registers vendors with businessName, ownerName, mobile, email, GST, PAN. Status defaults to 'pending' as expected. Database integration confirmed with vendorId generation."
+
+  - task: "POST /api/vendor/send-otp - Send OTP for vendor login"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Vendor OTP sending working correctly. Validates vendor exists in database before sending OTP. Returns standard OTP (123456) for demo purposes."
+
+  - task: "POST /api/vendor/verify-otp - Vendor OTP verification and login"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Vendor OTP verification working perfectly. JWT token contains 'role: vendor' field as required. Returns complete vendor profile data including status 'pending'."
+
+  - task: "GET /api/vendor/profile - Get vendor profile"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Vendor profile retrieval working correctly. Requires vendor JWT token authentication. Returns complete vendor details including businessName, ownerName, mobile, email, GST, PAN, status, and bankDetails."
+
+  - task: "POST /api/vendor/turfs - Add new turf"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Turf creation working perfectly. Requires vendor authentication. Creates turfs with all required fields (name, location, city, pricing). Status defaults to 'pending' for admin approval. Returns turfId for future operations."
+
+  - task: "GET /api/vendor/turfs - Get vendor's turfs"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Vendor turfs listing working correctly. Returns only turfs belonging to authenticated vendor (proper authorization). Includes complete turf details with proper data structure."
+
+  - task: "PUT /api/vendor/profile - Update vendor profile"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Vendor profile update working perfectly. Allows updating businessName, ownerName, email, GST, PAN, and bankDetails. Changes persist correctly in database and are reflected in response."
+
+  - task: "PUT /api/vendor/turfs/:id - Update turf details"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Turf update working perfectly. Vendors can only update their own turfs (proper authorization). Updates name, pricing, and other turf fields correctly. Prevents modification of vendorId, turfId, and status fields."
+
 agent_communication:
     - agent: "testing"
       message: "✅ COMPREHENSIVE BACKEND TESTING COMPLETE - All 9 API endpoints tested and working perfectly. Database operations (MongoDB) validated. User creation, OTP flow, payment integration, and data persistence all functioning correctly. No critical issues found."
@@ -380,3 +476,5 @@ agent_communication:
       message: "✅ PROFILE & BOOKING HISTORY TESTING COMPLETE - All requested features tested and working perfectly. Login with mobile 7777777777 successful, GET /api/bookings returns proper structure, booking creation updates history, TurfDetails enrichment working (name/location/city), and date filtering prevents past slots. All 5 test scenarios passed successfully."
     - agent: "testing"
       message: "✅ PROFILE UPDATE & DATE FIX TESTING COMPLETE - All requested profile and date filtering features tested successfully. Profile creation with mobile 6666666666, profile update API (PUT /api/profile), profile persistence across sessions, and enhanced date filtering all working perfectly. 5/5 tests passed, no critical issues found."
+    - agent: "testing"
+      message: "✅ VENDOR PORTAL API TESTING COMPLETE - All 8 vendor portal endpoints tested and working perfectly. Vendor registration, OTP authentication with role-based JWT tokens, profile management, and turf CRUD operations all functioning correctly. Database integration validated with proper vendor-turf associations and authorization controls. No critical issues found."

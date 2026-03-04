@@ -167,6 +167,24 @@ function verifyToken(request) {
   }
 }
 
+// Helper to verify vendor JWT token
+function verifyVendorToken(request) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== 'vendor') {
+      return null;
+    }
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
+
 export async function GET(request) {
   const { pathname, searchParams } = new URL(request.url);
 
@@ -279,6 +297,69 @@ export async function GET(request) {
       return NextResponse.json({ bookings: enrichedBookings });
     }
 
+    // GET /api/vendor/profile - Get vendor profile
+    if (pathname === '/api/vendor/profile') {
+      const vendor = verifyVendorToken(request);
+      if (!vendor) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      const db = await connectToDatabase();
+      const vendorData = await db.collection('vendors').findOne({ vendorId: vendor.vendorId });
+      
+      if (!vendorData) {
+        return NextResponse.json({ error: 'Vendor not found' }, { status: 404 });
+      }
+      
+      return NextResponse.json({ 
+        vendor: {
+          vendorId: vendorData.vendorId,
+          businessName: vendorData.businessName,
+          ownerName: vendorData.ownerName,
+          mobile: vendorData.mobile,
+          email: vendorData.email,
+          gst: vendorData.gst,
+          pan: vendorData.pan,
+          status: vendorData.status,
+          bankDetails: vendorData.bankDetails || {}
+        }
+      });
+    }
+
+    // GET /api/vendor/turfs - Get vendor's turfs
+    if (pathname === '/api/vendor/turfs') {
+      const vendor = verifyVendorToken(request);
+      if (!vendor) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      const db = await connectToDatabase();
+      const turfs = await db.collection('turfs')
+        .find({ vendorId: vendor.vendorId })
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      return NextResponse.json({ turfs });
+    }
+
+    // GET /api/vendor/turfs/:id - Get single turf details
+    if (pathname.startsWith('/api/vendor/turfs/') && pathname.split('/').length === 5) {
+      const vendor = verifyVendorToken(request);
+      if (!vendor) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      const turfId = pathname.split('/').pop();
+      const db = await connectToDatabase();
+      const turf = await db.collection('turfs').findOne({ turfId, vendorId: vendor.vendorId });
+      
+      if (!turf) {
+        return NextResponse.json({ error: 'Turf not found' }, { status: 404 });
+      }
+      
+      return NextResponse.json({ turf });
+    }
+
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   } catch (error) {
     console.error('GET Error:', error);
@@ -358,6 +439,169 @@ export async function POST(request) {
           email: user.email || '',
           dob: user.dob || ''
         }
+      });
+    }
+
+    // POST /api/vendor/register - Vendor registration
+    if (pathname === '/api/vendor/register') {
+      const body = await request.json();
+      const { businessName, ownerName, mobile, email, gst, pan } = body;
+      
+      if (!businessName || !ownerName || !mobile || !email) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+      
+      const db = await connectToDatabase();
+      const existingVendor = await db.collection('vendors').findOne({ mobile });
+      
+      if (existingVendor) {
+        return NextResponse.json({ error: 'Vendor already registered with this mobile' }, { status: 400 });
+      }
+      
+      const vendorId = uuidv4();
+      const vendor = {
+        vendorId,
+        businessName,
+        ownerName,
+        mobile,
+        email,
+        gst: gst || '',
+        pan: pan || '',
+        status: 'pending', // pending, approved, rejected
+        bankDetails: {},
+        createdAt: new Date()
+      };
+      
+      await db.collection('vendors').insertOne(vendor);
+      
+      return NextResponse.json({ 
+        success: true,
+        message: 'Registration successful! Please login with your mobile number.',
+        vendorId
+      });
+    }
+
+    // POST /api/vendor/send-otp - Send OTP for vendor login
+    if (pathname === '/api/vendor/send-otp') {
+      const body = await request.json();
+      const { mobile } = body;
+      
+      if (!mobile || mobile.length !== 10) {
+        return NextResponse.json({ error: 'Invalid mobile number' }, { status: 400 });
+      }
+      
+      // Check if vendor exists
+      const db = await connectToDatabase();
+      const vendor = await db.collection('vendors').findOne({ mobile });
+      
+      if (!vendor) {
+        return NextResponse.json({ error: 'Vendor not registered. Please register first.' }, { status: 404 });
+      }
+      
+      // Dummy OTP - same as user OTP
+      return NextResponse.json({ 
+        success: true, 
+        message: 'OTP sent successfully',
+        otp: '123456'
+      });
+    }
+
+    // POST /api/vendor/verify-otp - Verify OTP and vendor login
+    if (pathname === '/api/vendor/verify-otp') {
+      const body = await request.json();
+      const { mobile, otp } = body;
+      
+      if (!mobile || mobile.length !== 10) {
+        return NextResponse.json({ error: 'Invalid mobile number' }, { status: 400 });
+      }
+      
+      if (otp !== '123456') {
+        return NextResponse.json({ error: 'Invalid OTP' }, { status: 400 });
+      }
+      
+      const db = await connectToDatabase();
+      const vendor = await db.collection('vendors').findOne({ mobile });
+      
+      if (!vendor) {
+        return NextResponse.json({ error: 'Vendor not found' }, { status: 404 });
+      }
+      
+      // Generate JWT token with vendor role
+      const token = jwt.sign(
+        { vendorId: vendor.vendorId, mobile: vendor.mobile, role: 'vendor' },
+        JWT_SECRET,
+        { expiresIn: '30d' }
+      );
+      
+      return NextResponse.json({ 
+        success: true,
+        token,
+        vendor: {
+          vendorId: vendor.vendorId,
+          businessName: vendor.businessName,
+          ownerName: vendor.ownerName,
+          mobile: vendor.mobile,
+          email: vendor.email,
+          status: vendor.status
+        }
+      });
+    }
+
+    // POST /api/vendor/turfs - Add new turf
+    if (pathname === '/api/vendor/turfs') {
+      const vendor = verifyVendorToken(request);
+      if (!vendor) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      const body = await request.json();
+      const { 
+        name, description, location, city, area, pincode, 
+        sportTypes, turfType, surface, size, capacity,
+        amenities, pricing, operatingHours, images,
+        policies, googleMapsLink
+      } = body;
+      
+      if (!name || !location || !city || !pricing) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+      
+      const db = await connectToDatabase();
+      const turfId = uuidv4();
+      
+      const turf = {
+        turfId,
+        vendorId: vendor.vendorId,
+        name,
+        description: description || '',
+        location,
+        city,
+        area: area || '',
+        pincode: pincode || '',
+        sportTypes: sportTypes || [],
+        turfType: turfType || 'outdoor',
+        surface: surface || 'Artificial Grass',
+        size: size || '',
+        capacity: capacity || 0,
+        amenities: amenities || [],
+        pricing: pricing, // { basePrice, weekdayMorning, weekdayEvening, etc. }
+        operatingHours: operatingHours || { opening: '06:00', closing: '23:00' },
+        images: images || [],
+        policies: policies || {},
+        googleMapsLink: googleMapsLink || '',
+        rating: 0,
+        totalBookings: 0,
+        status: 'pending', // pending, approved, rejected
+        createdAt: new Date()
+      };
+      
+      await db.collection('turfs').insertOne(turf);
+      
+      return NextResponse.json({ 
+        success: true,
+        message: 'Turf added successfully! It will be visible after admin approval.',
+        turfId,
+        turf
       });
     }
 
@@ -525,6 +769,84 @@ export async function PUT(request) {
           email: updatedUser.email || '',
           dob: updatedUser.dob || ''
         }
+      });
+    }
+
+    // PUT /api/vendor/profile - Update vendor profile
+    if (pathname === '/api/vendor/profile') {
+      const vendor = verifyVendorToken(request);
+      if (!vendor) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      const body = await request.json();
+      const { businessName, ownerName, email, gst, pan, bankDetails } = body;
+      
+      const db = await connectToDatabase();
+      const updateData = {};
+      if (businessName) updateData.businessName = businessName;
+      if (ownerName) updateData.ownerName = ownerName;
+      if (email) updateData.email = email;
+      if (gst) updateData.gst = gst;
+      if (pan) updateData.pan = pan;
+      if (bankDetails) updateData.bankDetails = bankDetails;
+      updateData.updatedAt = new Date();
+      
+      await db.collection('vendors').updateOne(
+        { vendorId: vendor.vendorId },
+        { $set: updateData }
+      );
+      
+      const updatedVendor = await db.collection('vendors').findOne({ vendorId: vendor.vendorId });
+      
+      return NextResponse.json({ 
+        success: true,
+        vendor: {
+          vendorId: updatedVendor.vendorId,
+          businessName: updatedVendor.businessName,
+          ownerName: updatedVendor.ownerName,
+          mobile: updatedVendor.mobile,
+          email: updatedVendor.email,
+          gst: updatedVendor.gst,
+          pan: updatedVendor.pan,
+          status: updatedVendor.status
+        }
+      });
+    }
+
+    // PUT /api/vendor/turfs/:id - Update turf
+    if (pathname.startsWith('/api/vendor/turfs/')) {
+      const vendor = verifyVendorToken(request);
+      if (!vendor) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      const turfId = pathname.split('/').pop();
+      const body = await request.json();
+      
+      const db = await connectToDatabase();
+      const turf = await db.collection('turfs').findOne({ turfId, vendorId: vendor.vendorId });
+      
+      if (!turf) {
+        return NextResponse.json({ error: 'Turf not found' }, { status: 404 });
+      }
+      
+      const updateData = { ...body, updatedAt: new Date() };
+      delete updateData.vendorId; // Prevent changing vendor
+      delete updateData.turfId; // Prevent changing ID
+      delete updateData.status; // Prevent changing status directly
+      
+      await db.collection('turfs').updateOne(
+        { turfId, vendorId: vendor.vendorId },
+        { $set: updateData }
+      );
+      
+      const updatedTurf = await db.collection('turfs').findOne({ turfId });
+      
+      return NextResponse.json({ 
+        success: true,
+        message: 'Turf updated successfully',
+        turf: updatedTurf
       });
     }
 
