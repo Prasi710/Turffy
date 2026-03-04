@@ -453,7 +453,7 @@ const App = () => {
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl font-bold mb-4">Book Your Turf in Minutes</h1>
+          <h1 className="text-5xl font-bold mb-4">Book Your Turf in Seconds</h1>
           <p className="text-xl text-green-100">Find and book the best turfs in your city</p>
         </div>
       </div>
