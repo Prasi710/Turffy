@@ -197,18 +197,74 @@ export async function GET(request) {
     // GET /api/turfs - Get all turfs with optional city filter
     if (pathname === '/api/turfs') {
       const city = searchParams.get('city');
-      let turfs = mockTurfs;
       
+      // Fetch approved turfs from database
+      const db = await connectToDatabase();
+      let dbTurfs = await db.collection('turfs')
+        .find({ status: 'approved' })
+        .toArray();
+      
+      // Convert database turfs to customer format
+      const formattedDbTurfs = dbTurfs.map(turf => ({
+        id: turf.turfId,
+        name: turf.name,
+        city: turf.city,
+        location: turf.location,
+        area: turf.area || turf.location,
+        pricePerHour: turf.pricing?.basePrice || 0,
+        images: turf.images || [],
+        amenities: turf.amenities || [],
+        rating: turf.rating || 4.5,
+        surface: turf.surface || 'Artificial Grass',
+        description: turf.description || '',
+        capacity: turf.capacity || 0
+      }));
+      
+      // Merge with mock turfs for backward compatibility
+      let allTurfs = [...formattedDbTurfs, ...mockTurfs];
+      
+      // Filter by city if specified
       if (city && city !== 'All') {
-        turfs = mockTurfs.filter(turf => turf.city === city);
+        allTurfs = allTurfs.filter(turf => turf.city === city);
       }
       
-      return NextResponse.json({ turfs });
+      return NextResponse.json({ turfs: allTurfs });
     }
 
     // GET /api/turfs/:id - Get turf details
-    if (pathname.startsWith('/api/turfs/')) {
+    if (pathname.startsWith('/api/turfs/') && !pathname.includes('slots')) {
       const turfId = pathname.split('/').pop();
+      
+      // Try to find in database first
+      const db = await connectToDatabase();
+      const dbTurf = await db.collection('turfs').findOne({ 
+        $or: [
+          { turfId: turfId },
+          { turfId: turfId }
+        ],
+        status: 'approved'
+      });
+      
+      if (dbTurf) {
+        // Format database turf for customer view
+        const formattedTurf = {
+          id: dbTurf.turfId,
+          name: dbTurf.name,
+          city: dbTurf.city,
+          location: dbTurf.location,
+          area: dbTurf.area || dbTurf.location,
+          pricePerHour: dbTurf.pricing?.basePrice || 0,
+          images: dbTurf.images || [],
+          amenities: dbTurf.amenities || [],
+          rating: dbTurf.rating || 4.5,
+          surface: dbTurf.surface || 'Artificial Grass',
+          description: dbTurf.description || '',
+          capacity: dbTurf.capacity || 0
+        };
+        return NextResponse.json({ turf: formattedTurf });
+      }
+      
+      // Fallback to mock turfs
       const turf = mockTurfs.find(t => t.id === turfId);
       
       if (!turf) {
@@ -223,7 +279,18 @@ export async function GET(request) {
       const turfId = pathname.split('/').pop();
       const date = searchParams.get('date');
       
-      const turf = mockTurfs.find(t => t.id === turfId);
+      // Try to find in database first
+      const db = await connectToDatabase();
+      let turf = await db.collection('turfs').findOne({ 
+        turfId: turfId,
+        status: 'approved'
+      });
+      
+      // Fallback to mock turfs
+      if (!turf) {
+        turf = mockTurfs.find(t => t.id === turfId);
+      }
+      
       if (!turf) {
         return NextResponse.json({ error: 'Turf not found' }, { status: 404 });
       }
@@ -240,11 +307,10 @@ export async function GET(request) {
         isToday ? currentDate : null
       );
       
-      // Get booked slots from database
-      const db = await connectToDatabase();
+      // Get booked slots from database - use turfId for both mock and DB turfs
       const bookings = await db.collection('bookings')
         .find({
-          turfId,
+          turfId: turf.turfId || turf.id,
           date: requestedDate.toISOString().split('T')[0],
           status: { $in: ['confirmed', 'pending'] }
         })
@@ -264,8 +330,17 @@ export async function GET(request) {
 
     // GET /api/cities - Get list of cities
     if (pathname === '/api/cities') {
-      const cities = ['All', ...new Set(mockTurfs.map(t => t.city))];
-      return NextResponse.json({ cities });
+      // Get cities from database turfs
+      const db = await connectToDatabase();
+      const dbTurfs = await db.collection('turfs')
+        .find({ status: 'approved' })
+        .toArray();
+      
+      const dbCities = [...new Set(dbTurfs.map(t => t.city))];
+      const mockCities = [...new Set(mockTurfs.map(t => t.city))];
+      const allCities = ['All', ...new Set([...dbCities, ...mockCities])];
+      
+      return NextResponse.json({ cities: allCities });
     }
 
     // GET /api/bookings - Get user bookings
@@ -281,18 +356,35 @@ export async function GET(request) {
         .sort({ createdAt: -1 })
         .toArray();
       
-      // Enrich bookings with turf details
-      const enrichedBookings = bookings.map(booking => {
-        const turf = mockTurfs.find(t => t.id === booking.turfId);
+      // Enrich bookings with turf details from database first, then mock
+      const enrichedBookings = await Promise.all(bookings.map(async booking => {
+        // Try database first
+        let dbTurf = await db.collection('turfs').findOne({ 
+          turfId: booking.turfId 
+        });
+        
+        if (dbTurf) {
+          return {
+            ...booking,
+            turfDetails: {
+              name: dbTurf.name,
+              location: dbTurf.location,
+              city: dbTurf.city
+            }
+          };
+        }
+        
+        // Fallback to mock turfs
+        const mockTurf = mockTurfs.find(t => t.id === booking.turfId);
         return {
           ...booking,
-          turfDetails: turf ? {
-            name: turf.name,
-            location: turf.location,
-            city: turf.city
+          turfDetails: mockTurf ? {
+            name: mockTurf.name,
+            location: mockTurf.location,
+            city: mockTurf.city
           } : null
         };
-      });
+      }));
       
       return NextResponse.json({ bookings: enrichedBookings });
     }
