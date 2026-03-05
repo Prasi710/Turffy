@@ -467,6 +467,66 @@ test_plan:
           agent: "testing"
           comment: "✅ Turf update working perfectly. Vendors can only update their own turfs (proper authorization). Updates name, pricing, and other turf fields correctly. Prevents modification of vendorId, turfId, and status fields."
 
+  - task: "Database Integration - Vendor Turf Approval Flow"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Vendor adds turf, status='pending' in database, hidden from customer portal until approved. After manual approval, turf appears correctly on customer portal with proper data structure. Mock turfs maintain backward compatibility."
+
+  - task: "Database Integration - City Filtering"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ GET /api/cities merges cities from database and mock turfs. City filtering (Mumbai) correctly includes database turf + mock turfs. Found 3 Mumbai turfs total (1 database + 2 mock)."
+
+  - task: "Database Integration - Turf Details Retrieval"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ GET /api/turfs/:id tries database first, then fallback to mock turfs. Database turf details retrieved correctly with proper customer format conversion. Mock turf details maintain backward compatibility."
+
+  - task: "Database Integration - Slots Generation"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ GET /api/slots/:turfId works for database turfs. Generates 17 slots (6 AM-11 PM) correctly. Booking availability checks work with database turfs. Mock turf slots maintain compatibility."
+
+  - task: "Database Integration - Booking with Database Turfs"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Booking creation works with database turfs. Order creation, booking storage, and slot availability updates function correctly. GET /api/bookings enriches turf details from database. Slot marked unavailable after booking."
+
 agent_communication:
     - agent: "testing"
       message: "✅ COMPREHENSIVE BACKEND TESTING COMPLETE - All 9 API endpoints tested and working perfectly. Database operations (MongoDB) validated. User creation, OTP flow, payment integration, and data persistence all functioning correctly. No critical issues found."
@@ -478,3 +538,5 @@ agent_communication:
       message: "✅ PROFILE UPDATE & DATE FIX TESTING COMPLETE - All requested profile and date filtering features tested successfully. Profile creation with mobile 6666666666, profile update API (PUT /api/profile), profile persistence across sessions, and enhanced date filtering all working perfectly. 5/5 tests passed, no critical issues found."
     - agent: "testing"
       message: "✅ VENDOR PORTAL API TESTING COMPLETE - All 8 vendor portal endpoints tested and working perfectly. Vendor registration, OTP authentication with role-based JWT tokens, profile management, and turf CRUD operations all functioning correctly. Database integration validated with proper vendor-turf associations and authorization controls. No critical issues found."
+    - agent: "testing"
+      message: "✅ DATABASE INTEGRATION TESTING COMPLETE - All 5 database integration scenarios tested successfully with 100% pass rate. Vendor turf approval flow (pending→approved), city filtering with database+mock turfs, turf details retrieval, slots generation, and booking with database turfs all working perfectly. Verified approved turfs appear on customer portal while pending turfs remain hidden. Mock turf backward compatibility maintained throughout."

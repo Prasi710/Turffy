@@ -13,7 +13,9 @@ import { toast } from 'sonner';
 const App = () => {
   const [turfs, setTurfs] = useState([]);
   const [cities, setCities] = useState([]);
+  const [sports, setSports] = useState([]);
   const [selectedCity, setSelectedCity] = useState('All');
+  const [selectedSport, setSelectedSport] = useState('All');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showTurfDetails, setShowTurfDetails] = useState(false);
   const [selectedTurf, setSelectedTurf] = useState(null);
@@ -44,7 +46,8 @@ const App = () => {
   // Load cities and turfs
   useEffect(() => {
     loadCities();
-    loadTurfs('All');
+    loadSports();
+    loadTurfs('All', 'All');
   }, []);
 
   // Get user's location
@@ -55,7 +58,7 @@ const App = () => {
           // In production, use reverse geocoding to get city
           // For now, default to Mumbai
           setSelectedCity('Mumbai');
-          loadTurfs('Mumbai');
+          loadTurfs('Mumbai', 'All');
         },
         (error) => {
           console.log('Location access denied', error);
@@ -89,9 +92,24 @@ const App = () => {
     }
   };
 
-  const loadTurfs = async (city) => {
+  const loadSports = async () => {
     try {
-      const url = city === 'All' ? '/api/turfs' : `/api/turfs?city=${city}`;
+      const response = await fetch('/api/sports');
+      const data = await response.json();
+      setSports(data.sports || ['All']);
+    } catch (error) {
+      console.error('Error loading sports:', error);
+    }
+  };
+
+  const loadTurfs = async (city, sport) => {
+    try {
+      let url = '/api/turfs';
+      const params = new URLSearchParams();
+      if (city && city !== 'All') params.append('city', city);
+      if (sport && sport !== 'All') params.append('sport', sport);
+      if (params.toString()) url += `?${params.toString()}`;
+      
       const response = await fetch(url);
       const data = await response.json();
       setTurfs(data.turfs);
@@ -102,7 +120,12 @@ const App = () => {
 
   const handleCityChange = (city) => {
     setSelectedCity(city);
-    loadTurfs(city);
+    loadTurfs(city, selectedSport);
+  };
+
+  const handleSportChange = (sport) => {
+    setSelectedSport(sport);
+    loadTurfs(selectedCity, sport);
   };
 
   const handleTurfClick = async (turf) => {
@@ -413,19 +436,35 @@ const App = () => {
               <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">TurfHub</span>
             </div>
 
-            {/* City Selector */}
-            <div className="flex items-center space-x-2">
-              <MapPin className="w-5 h-5 text-gray-600" />
-              <Select value={selectedCity} onValueChange={handleCityChange}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select city" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.map(city => (
-                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* City & Sport Selectors */}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <MapPin className="w-5 h-5 text-gray-600" />
+                <Select value={selectedCity} onValueChange={handleCityChange}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Select city" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map(city => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-600">🏏</span>
+                <Select value={selectedSport} onValueChange={handleSportChange}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Select sport" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sports.map(sport => (
+                      <SelectItem key={sport} value={sport}>{sport}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Login/Profile */}
