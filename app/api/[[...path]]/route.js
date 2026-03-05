@@ -197,11 +197,26 @@ export async function GET(request) {
     // GET /api/turfs - Get all turfs with optional city filter
     if (pathname === '/api/turfs') {
       const city = searchParams.get('city');
+      const sport = searchParams.get('sport');
       
-      // Fetch approved turfs from database
+      // Fetch approved turfs from active vendors only
       const db = await connectToDatabase();
+      
+      // First get active vendors
+      const activeVendors = await db.collection('vendors')
+        .find({ isActive: true })
+        .toArray();
+      
+      const activeVendorIds = activeVendors.map(v => v.vendorId);
+      
+      // Then get turfs from active vendors only
+      let query = { 
+        status: 'approved',
+        vendorId: { $in: activeVendorIds }
+      };
+      
       let dbTurfs = await db.collection('turfs')
-        .find({ status: 'approved' })
+        .find(query)
         .toArray();
       
       // Convert database turfs to customer format
@@ -217,7 +232,9 @@ export async function GET(request) {
         rating: turf.rating || 4.5,
         surface: turf.surface || 'Artificial Grass',
         description: turf.description || '',
-        capacity: turf.capacity || 0
+        capacity: turf.capacity || 0,
+        sportTypes: turf.sportTypes || [],
+        customSlots: turf.customSlots || [] // NEW: vendor-defined slots
       }));
       
       // Merge with mock turfs for backward compatibility
@@ -226,6 +243,13 @@ export async function GET(request) {
       // Filter by city if specified
       if (city && city !== 'All') {
         allTurfs = allTurfs.filter(turf => turf.city === city);
+      }
+      
+      // Filter by sport if specified
+      if (sport && sport !== 'All') {
+        allTurfs = allTurfs.filter(turf => 
+          turf.sportTypes && turf.sportTypes.includes(sport)
+        );
       }
       
       return NextResponse.json({ turfs: allTurfs });
@@ -341,6 +365,24 @@ export async function GET(request) {
       const allCities = ['All', ...new Set([...dbCities, ...mockCities])];
       
       return NextResponse.json({ cities: allCities });
+    }
+
+    // GET /api/sports - Get list of sport categories
+    if (pathname === '/api/sports') {
+      const db = await connectToDatabase();
+      const dbTurfs = await db.collection('turfs')
+        .find({ status: 'approved' })
+        .toArray();
+      
+      // Extract all sport types from turfs
+      const allSports = new Set(['All']);
+      dbTurfs.forEach(turf => {
+        if (turf.sportTypes && Array.isArray(turf.sportTypes)) {
+          turf.sportTypes.forEach(sport => allSports.add(sport));
+        }
+      });
+      
+      return NextResponse.json({ sports: Array.from(allSports) });
     }
 
     // GET /api/bookings - Get user bookings
@@ -583,6 +625,7 @@ export async function POST(request) {
         gst: gst || '',
         pan: pan || '',
         status: 'pending', // pending, approved, rejected
+        isActive: true, // NEW: active/deactive toggle
         bankDetails: {},
         createdAt: new Date()
       };
@@ -758,6 +801,27 @@ export async function POST(request) {
       );
       
       return NextResponse.json({ success: true, message: `Turf ${status}` });
+    }
+
+    // POST /api/admin/vendors/toggle-active - Toggle vendor active status
+    if (pathname === '/api/admin/vendors/toggle-active') {
+      const body = await request.json();
+      const { vendorId, isActive } = body;
+      
+      if (!vendorId || isActive === undefined) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+      
+      const db = await connectToDatabase();
+      await db.collection('vendors').updateOne(
+        { vendorId },
+        { $set: { isActive, updatedAt: new Date() } }
+      );
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: `Vendor ${isActive ? 'activated' : 'deactivated'}` 
+      });
     }
 
     // POST /api/payment/create-order - Create Razorpay order
