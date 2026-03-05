@@ -87,6 +87,25 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleToggleVendorActive = async (vendorId, currentStatus) => {
+    try {
+      const response = await fetch('/api/admin/vendors/toggle-active', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendorId, isActive: !currentStatus })
+      });
+
+      if (response.ok) {
+        toast.success(`Vendor ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
+        await loadData();
+      } else {
+        toast.error('Failed to update vendor status');
+      }
+    } catch (error) {
+      toast.error('Error updating vendor status');
+    }
+  };
+
   const handleApproveTurf = async (turfId) => {
     try {
       const response = await fetch('/api/admin/turfs/approve', {
@@ -261,6 +280,9 @@ const AdminDashboard = () => {
                               <div className="flex items-center space-x-3 mb-2">
                                 <h4 className="font-semibold text-lg">{vendor.businessName}</h4>
                                 <Badge className={getStatusBadge(vendor.status)}>{vendor.status}</Badge>
+                                <Badge className={vendor.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                                  {vendor.isActive ? 'Active' : 'Inactive'}
+                                </Badge>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                                 <div><span className="font-medium">Owner:</span> {vendor.ownerName}</div>
@@ -270,18 +292,28 @@ const AdminDashboard = () => {
                               </div>
                             </div>
                             
-                            {vendor.status === 'pending' && (
-                              <div className="flex space-x-2 ml-4">
-                                <Button size="sm" onClick={() => handleApproveVendor(vendor.vendorId)} className="bg-green-600 hover:bg-green-700">
-                                  <CheckCircle className="w-4 h-4 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => handleRejectVendor(vendor.vendorId)}>
-                                  <XCircle className="w-4 h-4 mr-1" />
-                                  Reject
-                                </Button>
-                              </div>
-                            )}
+                            <div className="flex flex-col space-y-2 ml-4">
+                              {vendor.status === 'pending' && (
+                                <div className="flex space-x-2">
+                                  <Button size="sm" onClick={() => handleApproveVendor(vendor.vendorId)} className="bg-green-600 hover:bg-green-700">
+                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                    Approve
+                                  </Button>
+                                  <Button size="sm" variant="destructive" onClick={() => handleRejectVendor(vendor.vendorId)}>
+                                    <XCircle className="w-4 h-4 mr-1" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              )}
+                              <Button 
+                                size="sm" 
+                                variant={vendor.isActive ? "outline" : "default"}
+                                onClick={() => handleToggleVendorActive(vendor.vendorId, vendor.isActive)}
+                                className={vendor.isActive ? '' : 'bg-green-600 hover:bg-green-700'}
+                              >
+                                {vendor.isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
