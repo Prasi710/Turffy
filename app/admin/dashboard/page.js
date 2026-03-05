@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Building2, CheckCircle, XCircle, Clock, LogOut, TrendingUp } from 'lucide-react';
+import { Shield, Users, Building2, CheckCircle, XCircle, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdminDashboard = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('overview');
   const [vendors, setVendors] = useState([]);
   const [turfs, setTurfs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +30,6 @@ const AdminDashboard = () => {
 
   const loadData = async () => {
     try {
-      // Fetch all vendors and turfs directly from API
       const vendorsRes = await fetch('/api/admin/vendors');
       const turfsRes = await fetch('/api/admin/turfs');
       
@@ -151,15 +148,6 @@ const AdminDashboard = () => {
     router.push('/admin');
   };
 
-  const getStatusBadge = (status) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      approved: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
   const pendingVendors = vendors.filter(v => v.status === 'pending');
   const approvedVendors = vendors.filter(v => v.status === 'approved');
   const pendingTurfs = turfs.filter(t => t.status === 'pending');
@@ -210,7 +198,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gray-900">{vendors.length}</div>
-              <p className="text-xs text-gray-500 mt-1">{pendingVendors.length} pending approval</p>
+              <p className="text-xs text-gray-500 mt-1">{pendingVendors.length} pending</p>
             </CardContent>
           </Card>
 
@@ -220,7 +208,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gray-900">{turfs.length}</div>
-              <p className="text-xs text-gray-500 mt-1">{pendingTurfs.length} pending approval</p>
+              <p className="text-xs text-gray-500 mt-1">{pendingTurfs.length} pending</p>
             </CardContent>
           </Card>
 
@@ -240,155 +228,206 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-yellow-600">{pendingVendors.length + pendingTurfs.length}</div>
-              <p className="text-xs text-gray-500 mt-1">Requires attention</p>
+              <p className="text-xs text-gray-500 mt-1">Need approval</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Tabs */}
-        <Card>
-          <CardContent className="p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="vendors">
-                  <Users className="w-4 h-4 mr-2" />
-                  Vendors ({pendingVendors.length} pending)
-                </TabsTrigger>
-                <TabsTrigger value="turfs">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Turfs ({pendingTurfs.length} pending)
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Vendors Tab */}
-              <TabsContent value="vendors" className="space-y-4 mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Vendor Management</h3>
-                  <div className="flex space-x-2">
-                    <Badge variant="secondary">{approvedVendors.length} Approved</Badge>
-                    <Badge className="bg-yellow-100 text-yellow-800">{pendingVendors.length} Pending</Badge>
-                  </div>
+        {/* Pending Vendors */}
+        {pendingVendors.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader className="bg-yellow-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Users className="w-5 h-5" />
+                    <span>Pending Vendor Approvals</span>
+                  </CardTitle>
+                  <CardDescription>Review and approve new vendors</CardDescription>
                 </div>
+                <Badge className="bg-yellow-500 text-white">{pendingVendors.length} Pending</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                {pendingVendors.map(vendor => (
+                  <Card key={vendor.vendorId} className="border-2 border-yellow-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-lg mb-2">{vendor.businessName}</h4>
+                          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                            <div><span className="font-medium">Owner:</span> {vendor.ownerName}</div>
+                            <div><span className="font-medium">Mobile:</span> {vendor.mobile}</div>
+                            <div><span className="font-medium">Email:</span> {vendor.email}</div>
+                            {vendor.gst && <div><span className="font-medium">GST:</span> {vendor.gst}</div>}
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2 ml-4">
+                          <Button size="sm" onClick={() => handleApproveVendor(vendor.vendorId)} className="bg-green-600 hover:bg-green-700">
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleRejectVendor(vendor.vendorId)}>
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-                {vendors.length > 0 ? (
-                  <div className="space-y-3">
-                    {vendors.map(vendor => (
-                      <Card key={vendor.vendorId} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <h4 className="font-semibold text-lg">{vendor.businessName}</h4>
-                                <Badge className={getStatusBadge(vendor.status)}>{vendor.status}</Badge>
-                                <Badge className={vendor.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                                  {vendor.isActive ? 'Active' : 'Inactive'}
-                                </Badge>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                                <div><span className="font-medium">Owner:</span> {vendor.ownerName}</div>
-                                <div><span className="font-medium">Mobile:</span> {vendor.mobile}</div>
-                                <div><span className="font-medium">Email:</span> {vendor.email}</div>
-                                {vendor.gst && <div><span className="font-medium">GST:</span> {vendor.gst}</div>}
-                              </div>
+        {/* Pending Turfs */}
+        {pendingTurfs.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader className="bg-yellow-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Building2 className="w-5 h-5" />
+                    <span>Pending Turf Approvals</span>
+                  </CardTitle>
+                  <CardDescription>Review and approve new turfs</CardDescription>
+                </div>
+                <Badge className="bg-yellow-500 text-white">{pendingTurfs.length} Pending</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                {pendingTurfs.map(turf => {
+                  const vendor = vendors.find(v => v.vendorId === turf.vendorId);
+                  return (
+                    <Card key={turf.turfId} className="border-2 border-yellow-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-lg mb-2">{turf.name}</h4>
+                            <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-2">
+                              <div><span className="font-medium">Location:</span> {turf.location}, {turf.city}</div>
+                              <div><span className="font-medium">Price:</span> ₹{turf.pricing?.basePrice || 0}/hr</div>
+                              <div><span className="font-medium">Surface:</span> {turf.surface}</div>
+                              <div><span className="font-medium">Type:</span> {turf.turfType}</div>
                             </div>
-                            
-                            <div className="flex flex-col space-y-2 ml-4">
-                              {vendor.status === 'pending' && (
-                                <div className="flex space-x-2">
-                                  <Button size="sm" onClick={() => handleApproveVendor(vendor.vendorId)} className="bg-green-600 hover:bg-green-700">
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    Approve
-                                  </Button>
-                                  <Button size="sm" variant="destructive" onClick={() => handleRejectVendor(vendor.vendorId)}>
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    Reject
-                                  </Button>
-                                </div>
-                              )}
-                              <Button 
-                                size="sm" 
-                                variant={vendor.isActive ? "outline" : "default"}
-                                onClick={() => handleToggleVendorActive(vendor.vendorId, vendor.isActive)}
-                                className={vendor.isActive ? '' : 'bg-green-600 hover:bg-green-700'}
-                              >
-                                {vendor.isActive ? 'Deactivate' : 'Activate'}
-                              </Button>
+                            {vendor && (
+                              <div className="text-xs bg-gray-100 p-2 rounded mt-2">
+                                <span className="font-medium">Vendor:</span> {vendor.businessName}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex space-x-2 ml-4">
+                            <Button size="sm" onClick={() => handleApproveTurf(turf.turfId)} className="bg-green-600 hover:bg-green-700">
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleRejectTurf(turf.turfId)}>
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* All Vendors */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Users className="w-5 h-5" />
+              <span>All Vendors ({vendors.length})</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {vendors.length > 0 ? (
+              <div className="space-y-3">
+                {vendors.map(vendor => (
+                  <Card key={vendor.vendorId}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h4 className="font-semibold">{vendor.businessName}</h4>
+                            <Badge className={vendor.status === 'approved' ? 'bg-green-100 text-green-800' : vendor.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}>
+                              {vendor.status}
+                            </Badge>
+                            <Badge className={vendor.isActive ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}>
+                              {vendor.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {vendor.ownerName} • {vendor.mobile} • {vendor.email}
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          size="sm" 
+                          variant={vendor.isActive ? "outline" : "default"}
+                          onClick={() => handleToggleVendorActive(vendor.vendorId, vendor.isActive)}
+                          className={!vendor.isActive ? 'bg-green-600 hover:bg-green-700' : ''}
+                        >
+                          {vendor.isActive ? 'Deactivate' : 'Activate'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-8 text-gray-500">No vendors yet</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* All Turfs */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Building2 className="w-5 h-5" />
+              <span>All Turfs ({turfs.length})</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {turfs.length > 0 ? (
+              <div className="space-y-3">
+                {turfs.map(turf => {
+                  const vendor = vendors.find(v => v.vendorId === turf.vendorId);
+                  return (
+                    <Card key={turf.turfId}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <h4 className="font-semibold">{turf.name}</h4>
+                              <Badge className={turf.status === 'approved' ? 'bg-green-100 text-green-800' : turf.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}>
+                                {turf.status}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {turf.city} • ₹{turf.pricing?.basePrice || 0}/hr • {turf.surface}
+                              {vendor && <span> • Vendor: {vendor.businessName}</span>}
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <Users className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                    <p>No vendors registered yet</p>
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Turfs Tab */}
-              <TabsContent value="turfs" className="space-y-4 mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Turf Management</h3>
-                  <div className="flex space-x-2">
-                    <Badge variant="secondary">{approvedTurfs.length} Approved</Badge>
-                    <Badge className="bg-yellow-100 text-yellow-800">{pendingTurfs.length} Pending</Badge>
-                  </div>
-                </div>
-
-                {turfs.length > 0 ? (
-                  <div className="space-y-3">
-                    {turfs.map(turf => {
-                      const vendor = vendors.find(v => v.vendorId === turf.vendorId);
-                      return (
-                        <Card key={turf.turfId} className="hover:shadow-md transition-shadow">
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-3 mb-2">
-                                  <h4 className="font-semibold text-lg">{turf.name}</h4>
-                                  <Badge className={getStatusBadge(turf.status)}>{turf.status}</Badge>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-2">
-                                  <div><span className="font-medium">Location:</span> {turf.location}, {turf.city}</div>
-                                  <div><span className="font-medium">Price:</span> ₹{turf.pricing?.basePrice || 0}/hour</div>
-                                  <div><span className="font-medium">Surface:</span> {turf.surface}</div>
-                                  <div><span className="font-medium">Type:</span> {turf.turfType}</div>
-                                </div>
-                                {vendor && (
-                                  <div className="text-xs text-gray-500 mt-2">
-                                    <span className="font-medium">Vendor:</span> {vendor.businessName} ({vendor.mobile})
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {turf.status === 'pending' && (
-                                <div className="flex space-x-2 ml-4">
-                                  <Button size="sm" onClick={() => handleApproveTurf(turf.turfId)} className="bg-green-600 hover:bg-green-700">
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    Approve
-                                  </Button>
-                                  <Button size="sm" variant="destructive" onClick={() => handleRejectTurf(turf.turfId)}>
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    Reject
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <Building2 className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                    <p>No turfs listed yet</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-center py-8 text-gray-500">No turfs yet</p>
+            )}
           </CardContent>
         </Card>
       </div>
