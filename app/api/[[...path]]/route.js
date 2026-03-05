@@ -326,10 +326,39 @@ export async function GET(request) {
       const currentDateOnly = new Date(currentDate.toISOString().split('T')[0] + 'T00:00:00');
       const isToday = requestedDate.getTime() === currentDateOnly.getTime();
       
-      const slots = generateSlots(
-        requestedDate.toISOString().split('T')[0],
-        isToday ? currentDate : null
-      );
+      // Check if turf has custom slots
+      let slots;
+      if (turf.customSlots && turf.customSlots.length > 0) {
+        // Use custom slots with dynamic pricing
+        const isWeekend = requestedDate.getDay() === 0 || requestedDate.getDay() === 6;
+        
+        slots = turf.customSlots.map(slot => {
+          const slotHour = parseInt(slot.time.split(':')[0]);
+          
+          // Filter out past slots if today
+          if (isToday) {
+            const slotDate = new Date(date);
+            slotDate.setHours(slotHour, 0, 0, 0);
+            if (slotDate <= currentDate) {
+              return null;
+            }
+          }
+          
+          return {
+            id: `slot-${requestedDate.toISOString().split('T')[0]}-${slotHour}`,
+            time: slot.time,
+            endTime: slot.endTime,
+            price: isWeekend ? slot.weekendPrice : slot.weekdayPrice,
+            available: true
+          };
+        }).filter(slot => slot !== null);
+      } else {
+        // Use default slot generation
+        slots = generateSlots(
+          requestedDate.toISOString().split('T')[0],
+          isToday ? currentDate : null
+        );
+      }
       
       // Get booked slots from database - use turfId for both mock and DB turfs
       const bookings = await db.collection('bookings')
@@ -705,6 +734,75 @@ export async function POST(request) {
       });
     }
 
+    // POST /api/vendor/upload-image - Upload turf image
+    if (pathname === '/api/vendor/upload-image') {
+      const vendor = verifyVendorToken(request);
+      if (!vendor) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      try {
+        const formData = await request.formData();
+        const file = formData.get('file');
+        
+        if (!file) {
+          return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+        }
+
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+          return NextResponse.json({ 
+            error: 'Invalid file type. Only JPG, PNG, and WebP images are allowed' 
+          }, { status: 400 });
+        }
+
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+          return NextResponse.json({ 
+            error: 'File size too large. Maximum size is 5MB' 
+          }, { status: 400 });
+        }
+
+        // Create unique filename
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(7);
+        const ext = file.name.split('.').pop();
+        const filename = `turf_${vendor.vendorId}_${timestamp}_${randomStr}.${ext}`;
+        
+        // Convert file to buffer and save
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        
+        const fs = require('fs');
+        const path = require('path');
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'turfs');
+        
+        // Ensure directory exists
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        const filepath = path.join(uploadDir, filename);
+        fs.writeFileSync(filepath, buffer);
+        
+        // Return the public URL
+        const imageUrl = `/uploads/turfs/${filename}`;
+        
+        return NextResponse.json({ 
+          success: true,
+          imageUrl,
+          message: 'Image uploaded successfully'
+        });
+      } catch (error) {
+        console.error('Upload error:', error);
+        return NextResponse.json({ 
+          error: 'Failed to upload image' 
+        }, { status: 500 });
+      }
+    }
+
     // POST /api/vendor/turfs - Add new turf
     if (pathname === '/api/vendor/turfs') {
       const vendor = verifyVendorToken(request);
@@ -716,7 +814,7 @@ export async function POST(request) {
       const { 
         name, description, location, city, area, pincode, 
         sportTypes, turfType, surface, size, capacity,
-        amenities, pricing, operatingHours, images,
+        amenities, pricing, operatingHours, customSlots, images,
         policies, googleMapsLink
       } = body;
       
@@ -744,6 +842,7 @@ export async function POST(request) {
         amenities: amenities || [],
         pricing: pricing, // { basePrice, weekdayMorning, weekdayEvening, etc. }
         operatingHours: operatingHours || { opening: '06:00', closing: '23:00' },
+        customSlots: customSlots || [], // Array of { time, endTime, weekdayPrice, weekendPrice }
         images: images || [],
         policies: policies || {},
         googleMapsLink: googleMapsLink || '',

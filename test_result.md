@@ -102,7 +102,121 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the TurfHub booking application backend APIs with comprehensive endpoint validation"
+user_problem_statement: "Complete the vendor custom slot builder, vendor profile edit, image upload with camera access, and integrate custom slots into customer booking flow"
+
+backend:
+  - task: "POST /api/vendor/turfs - Save customSlots array"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added customSlots field to turf creation endpoint. Vendor can now submit custom slot pricing (weekday/weekend) for each hour."
+        - working: true
+          agent: "testing"
+          comment: "✅ TESTED - Custom slots turf creation working perfectly. Created turf with 10 custom slots (weekday/weekend pricing), all slots saved correctly in database. Backward compatibility maintained for turfs without customSlots."
+
+  - task: "POST /api/vendor/upload-image - Image upload endpoint"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Implemented file upload endpoint with validation (type, size), file storage in /public/uploads/turfs/, and returns public URL. Supports JPG, PNG, WebP up to 5MB."
+        - working: true
+          agent: "testing"
+          comment: "✅ TESTED - Image upload working correctly. Valid PNG uploaded to /public/uploads/turfs/, file type validation rejecting invalid types, unauthorized requests properly blocked. Minor: error handling for no file returns 500 instead of 400 but core functionality works."
+
+  - task: "GET /api/slots/:turfId - Use custom slots with weekend/weekday pricing"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Updated slot generation to check if turf has customSlots. If yes, uses custom pricing (weekend vs weekday). Falls back to default generation if no custom slots."
+        - working: true
+          agent: "testing"
+          comment: "✅ TESTED - Dynamic pricing working perfectly. Weekday slots show correct prices (06:00=₹1000, 18:00=₹2500), weekend slots show correct prices (06:00=₹1500, 18:00=₹3500). Past slot filtering works, fallback to default generation for non-custom turfs works. Database integration verified."
+
+  - task: "PUT /api/vendor/profile - Vendor profile update"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "Already tested and working from previous session. Allows updating businessName, ownerName, email, GST, PAN, bankDetails."
+
+frontend:
+  - task: "Vendor Add Turf - Custom Slot Builder UI"
+    implemented: true
+    working: "NA"
+    file: "app/vendor/add-turf/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Step 5 now has 'Generate Slots' button that creates a pricing table based on operating hours. Each slot has weekday and weekend price inputs. Uses base price as default."
+
+  - task: "Vendor Add Turf - Image Upload with Camera Access"
+    implemented: true
+    working: "NA"
+    file: "app/vendor/add-turf/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Step 6 now uses file upload inputs instead of URL inputs. Added capture='environment' for mobile camera access. Shows upload progress and image preview. Max 3 images, 5MB each."
+
+  - task: "Vendor Profile Edit Page"
+    implemented: true
+    working: "NA"
+    file: "app/vendor/profile/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Created new profile page at /vendor/profile. Shows business info, bank details, account status. Allows editing all fields except mobile. Link added to vendor dashboard."
+
+metadata:
+  created_by: "main_agent"
+  version: "2.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus: []
+  stuck_tasks: []
+  test_all: false
+  test_priority: "completed"
+  vendor_features_tests: "completed"
+
+agent_communication:
+    - agent: "main"
+      message: "Completed 4 major features: 1) Custom slot builder with dynamic pricing table, 2) Vendor profile edit page, 3) Image upload with camera access and file validation, 4) Integrated custom slots into customer booking flow with weekend/weekday pricing logic. Ready for backend testing."
+    - agent: "testing"
+      message: "✅ VENDOR CUSTOM SLOTS & IMAGE UPLOAD TESTING COMPLETE - All 3 new vendor features tested successfully with 16/17 tests passed. Custom slots with weekday/weekend pricing working perfectly (₹1000/₹1500 for 6AM, ₹2500/₹3500 for 6PM). Image upload endpoint validated with file type/size checks. Integration flow verified: vendor creates → admin approves → customer sees dynamic pricing. Database integration confirmed. Minor: file upload error handling returns 500 instead of 400 for no file, but core functionality works. Ready for production use."
 
 backend:
   - task: "GET /api/turfs - Get all turfs"
