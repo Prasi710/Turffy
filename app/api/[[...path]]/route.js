@@ -389,6 +389,29 @@ export async function GET(request) {
       return NextResponse.json({ bookings: enrichedBookings });
     }
 
+    // GET /api/admin/vendors - Get all vendors (admin only)
+    if (pathname === '/api/admin/vendors') {
+      // Simple admin check (in production, use proper JWT)
+      const db = await connectToDatabase();
+      const vendors = await db.collection('vendors')
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      return NextResponse.json({ vendors });
+    }
+
+    // GET /api/admin/turfs - Get all turfs (admin only)
+    if (pathname === '/api/admin/turfs') {
+      const db = await connectToDatabase();
+      const turfs = await db.collection('turfs')
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      return NextResponse.json({ turfs });
+    }
+
     // GET /api/vendor/profile - Get vendor profile
     if (pathname === '/api/vendor/profile') {
       const vendor = verifyVendorToken(request);
@@ -695,6 +718,46 @@ export async function POST(request) {
         turfId,
         turf
       });
+    }
+
+    // POST /api/admin/vendors/approve - Approve/Reject vendor
+    if (pathname === '/api/admin/vendors/approve') {
+      const body = await request.json();
+      const { vendorId, action } = body;
+      
+      if (!vendorId || !action) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+      
+      const status = action === 'approve' ? 'approved' : 'rejected';
+      
+      const db = await connectToDatabase();
+      await db.collection('vendors').updateOne(
+        { vendorId },
+        { $set: { status, updatedAt: new Date() } }
+      );
+      
+      return NextResponse.json({ success: true, message: `Vendor ${status}` });
+    }
+
+    // POST /api/admin/turfs/approve - Approve/Reject turf
+    if (pathname === '/api/admin/turfs/approve') {
+      const body = await request.json();
+      const { turfId, action } = body;
+      
+      if (!turfId || !action) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+      
+      const status = action === 'approve' ? 'approved' : 'rejected';
+      
+      const db = await connectToDatabase();
+      await db.collection('turfs').updateOne(
+        { turfId },
+        { $set: { status, updatedAt: new Date() } }
+      );
+      
+      return NextResponse.json({ success: true, message: `Turf ${status}` });
     }
 
     // POST /api/payment/create-order - Create Razorpay order
